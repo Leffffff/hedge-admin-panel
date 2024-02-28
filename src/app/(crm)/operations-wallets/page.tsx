@@ -3,7 +3,9 @@ import { createColumnHelper } from '@tanstack/react-table';
 import ActionEdit from '../../../../public/actionEdit.svg';
 import ActionNotification from '../../../../public/actionNotification.svg';
 import * as React from 'react';
+import { useRef, useState } from 'react';
 import Table from '@/components/Table';
+import BaseModal from '@/components/BaseModal';
 
 type TableData = {
   address: string;
@@ -160,11 +162,19 @@ const columns = [
   }),
   columnHelper.accessor('action', {
     header: () => <div className='text-center text-xs'>Action</div>,
-    cell: (info) => {
-      const actions = info.getValue();
+    cell: ({ getValue, row, column, table }) => {
+      const actions = getValue();
       return (
         <div className='flex flex w-[139px] justify-center gap-6'>
-          {actions.includes('edit') && <ActionEdit />}
+          {actions.includes('edit') && (
+            <ActionEdit
+              className='cursor-pointer'
+              onClick={() => {
+                // @ts-ignore
+                table.options.meta?.updateData(row.index, column.id);
+              }}
+            />
+          )}
           {actions.includes('notification') && <ActionNotification />}
         </div>
       );
@@ -174,16 +184,170 @@ const columns = [
 ];
 
 const OperationsWallets = () => {
+  const [isEthereumModalOpen, setIsEthereumModalOpen] = useState(false);
+  const [isBinanceModalOpen, setIsBinanceModalOpen] = useState(false);
+  const [ethereumDataTable, setEthereumDataTable] = useState(() => [
+    ...defaultData,
+  ]);
+  const [binanceDataTable, setBinanceDataTable] = useState(() => [
+    ...defaultData,
+  ]);
+  const [activeRow, setActiveRow] = useState<TableData | null>(null);
+  const [activeRowIndex, setActiveRowIndex] = useState(0);
+  const [columnId, setColumnId] = useState('');
+  const addressRef = useRef<HTMLInputElement>(null);
+
+  const handleUpdateEthereumRow = () => {
+    setEthereumDataTable((old) =>
+      old.map((row, index) => {
+        if (index === activeRowIndex) {
+          return {
+            ...old[activeRowIndex],
+            address: addressRef.current?.value || '',
+          };
+        }
+        return row;
+      })
+    );
+    setIsEthereumModalOpen(false);
+  };
+
+  const handleUpdateBinanceRow = () => {
+    setBinanceDataTable((old) =>
+      old.map((row, index) => {
+        if (index === activeRowIndex) {
+          return {
+            ...old[activeRowIndex],
+            address: addressRef.current?.value || '',
+          };
+        }
+        return row;
+      })
+    );
+    setIsBinanceModalOpen(false);
+  };
+
   return (
     <div className='pl-[30px] pt-[41px]'>
       <h3 className='mb-6 text-[28px] font-semibold text-[#33322F]'>
         Ethereum mint / Burn Wallet
       </h3>
-      <Table data={defaultData} columns={columns} />
+      <Table
+        data={ethereumDataTable}
+        columns={columns}
+        meta={{
+          updateData: (rowIndex: number, columnId: string) => {
+            const currentRow = ethereumDataTable.find(
+              (_, index) => index === rowIndex
+            );
+            if (currentRow) {
+              setColumnId(columnId);
+              setActiveRowIndex(rowIndex);
+              setActiveRow(currentRow);
+              setIsEthereumModalOpen(true);
+            }
+          },
+        }}
+      />
+      <BaseModal
+        showModal={isEthereumModalOpen}
+        onClose={() => setIsEthereumModalOpen(false)}
+        customExternalStyles={{ width: '454px' }}
+        customButtons={true}
+      >
+        <div className='flex flex-col items-center justify-center'>
+          <h4 className='mb-3 max-w-[268px] text-center text-[28px] font-medium text-[#202534]'>
+            Edit wallet
+          </h4>
+          <div className='mb-[36px] flex flex-col items-center justify-center'>
+            <span className='mb-[6px] text-[14px] leading-6 text-[#8A8884]'>
+              Wallet address
+            </span>
+            <input
+              ref={addressRef}
+              defaultValue={activeRow?.address}
+              required={true}
+              className='h-[44px] w-[361px] rounded bg-[#F7F5F0] py-[6px] text-center text-sm font-medium text-[#031734]'
+            />
+          </div>
+          <div className='flex justify-center gap-6'>
+            <button
+              onClick={() => {
+                handleUpdateEthereumRow();
+              }}
+              className='flex h-[42px] w-[170px] items-center justify-center rounded bg-[#3885E8] text-[18px] text-white'
+            >
+              Update
+            </button>
+            <button
+              onClick={() => setIsEthereumModalOpen(false)}
+              className='flex h-[42px] w-[170px] items-center justify-center rounded bg-[#BAB8B3] text-[18px] text-white'
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </BaseModal>
       <h3 className='mb-6 mt-[48px] text-[28px] font-semibold text-[#33322F]'>
         Binance mint / Burn Wallet
       </h3>
-      <Table data={defaultData} columns={columns} />
+      <Table
+        data={binanceDataTable}
+        columns={columns}
+        meta={{
+          updateData: (rowIndex: number, columnId: string) => {
+            const currentRow = binanceDataTable.find(
+              (_, index) => index === rowIndex
+            );
+            if (currentRow) {
+              setColumnId(columnId);
+              setActiveRowIndex(rowIndex);
+              setActiveRow(currentRow);
+              setIsBinanceModalOpen(true);
+            }
+          },
+        }}
+      />
+
+      <BaseModal
+        showModal={isBinanceModalOpen}
+        onClose={() => setIsBinanceModalOpen(false)}
+        customExternalStyles={{ width: '454px' }}
+        customButtons={true}
+      >
+        <div className='flex flex-col items-center justify-center'>
+          <h4 className='mb-3 max-w-[268px] text-center text-[28px] font-medium text-[#202534]'>
+            Edit wallet
+          </h4>
+          <div className='mb-[36px] flex flex-col items-center justify-center'>
+            <span className='mb-[6px] text-[14px] leading-6 text-[#8A8884]'>
+              Wallet address
+            </span>
+            <input
+              ref={addressRef}
+              defaultValue={activeRow?.address}
+              required={true}
+              className='h-[44px] w-[361px] rounded bg-[#F7F5F0] py-[6px] text-center text-sm font-medium text-[#031734]'
+            />
+          </div>
+          <div className='flex justify-center gap-6'>
+            <button
+              onClick={() => {
+                handleUpdateBinanceRow();
+              }}
+              className='flex h-[42px] w-[170px] items-center justify-center rounded bg-[#3885E8] text-[18px] text-white'
+            >
+              Update
+            </button>
+            <button
+              onClick={() => setIsBinanceModalOpen(false)}
+              className='flex h-[42px] w-[170px] items-center justify-center rounded bg-[#BAB8B3] text-[18px] text-white'
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </BaseModal>
     </div>
   );
 };

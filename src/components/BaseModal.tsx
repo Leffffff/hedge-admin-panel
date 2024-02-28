@@ -6,8 +6,8 @@ import CloseIcon from '../../public/closeIcon.svg';
 export interface BasicModalProps extends React.PropsWithChildren {
   showModal: boolean;
   onClose: () => void;
-  btnText: string;
-  btnAction: () => void;
+  btnText?: string;
+  btnAction?: () => void;
   customButtons?: boolean;
 }
 
@@ -69,12 +69,12 @@ const BaseModal = (props: BasicModalProps & BasicModalStylesProps) => {
           <div className='flex justify-center gap-6'>
             <button
               onClick={() => {
-                props.btnAction();
+                props.btnAction?.();
                 hideModal();
               }}
               className='flex h-[42px] w-[170px] items-center justify-center rounded bg-[#3885E8] text-[18px] text-white'
             >
-              {props.btnText}
+              {props.btnText || ''}
             </button>
             <button
               onClick={hideModal}
